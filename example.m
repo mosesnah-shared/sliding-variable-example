@@ -16,8 +16,8 @@ c  = myColor();                                                            % Set
 %% (1A) n-Link Manipulator Example #1.
 % Tracking a circular trajectory with constant angular acceleration.
 clc
-l  = [   2,  3,   2 ];  
-qi = [ 0.2,0.2, 0.1 ];
+l  = 1  * ones( 1, 9 );  
+qi = 0.05 * ones( 1, 9 );
 N = length( qi );                                                          % Degrees of freedom of the robot.
 
 robot = myPlanarRobot( l );
@@ -33,7 +33,7 @@ set( robot.hAxes( 1 ),   'XLim',   [ -tmpLim , tmpLim ] , ...
 % The equation of desired trajectory's position + velocity w.r.t. time.
 
 syms t
-idx_c = 1;
+idx_c = 4;
 
 if idx_c == 1
     % [Constraint Type 1] - Circle, xd with constant angular acceleration
@@ -43,7 +43,7 @@ if idx_c == 1
     xd = matlabFunction( xd ); vd = matlabFunction( vd );                  % Converting symbolic expression as function handle.          
 
     % Drawing the circle to track.                   
-    ttmp = 0 : 0.001 : 2*pi;
+    ttmp = 0 : 0.001 : 2*3.141592;
     plot( R * cos( ttmp ), R * sin( ttmp ), 'parent', robot.hAxes(1), ...
                 'linewidth', 3, 'linestyle', '--', 'color', c.blue_sky )                    
     
@@ -58,11 +58,38 @@ elseif idx_c == 2
     plot( [ pi( 1 ), pf( 1 ) ], [ pi( 2 ), pf( 2 ) ], 'linewidth', 3, 'linestyle', '--', 'color', c.blue_sky )                        
     
 elseif idx_c == 3
+    % [Constraint Type 3] - Infinity Sign.
+    p0 = [4,0];
+    xw = 1; yw = 3;
+                                                                           % Radius of the Desired Trajectory
+    xd  = [p0(1) + xw * cos( t ), p0(2) + yw * sin( 2 * t )];              % Desired Trajectory Position w.r.t. time
+    vd  = diff( xd, t );                                                   % Desired Trajectory Velocity w.r.t. time 
+    xd  = matlabFunction( xd ); vd = matlabFunction( vd );                 % Converting symbolic expression as function handle.          
+    
+    ttmp = 0 : 0.001 : 2*3.141592;    
+    
+    tmp = arrayfun( xd, ttmp , 'UniformOutput', false); tmp = cell2mat( tmp' );
+
+    plot( tmp( :,1 ), tmp( :,2 ), 'parent', robot.hAxes(1), ...
+                'linewidth', 3, 'linestyle', '--', 'color', c.blue_sky )       
+            
+elseif idx_c == 4
+    % [Constraint Type 4] - Heart Curve
+    xd  = 0.4 * [16 * sin(t)^3, 13 * cos(t) - 5 * cos(2*t) - 2* cos(3*t) - cos(4*t)];
+    vd  = diff( xd, t );                                                   % Desired Trajectory Velocity w.r.t. time 
+    xd  = matlabFunction( xd ); vd = matlabFunction( vd );                 % Converting symbolic expression as function handle.          
+
+    ttmp = 0 : 0.001 : 2*3.141592;    
+    
+    tmp = arrayfun( xd, ttmp , 'UniformOutput', false); tmp = cell2mat( tmp' );
+
+    plot( tmp( :,1 ), tmp( :,2 ), ...
+                'linewidth', 2, 'linestyle', '--', 'color', c.roseRed )         
     
 end
     
 
-T = 5;                                                                     % Total Time of ode intergration
+T = 6.3;                                                                    % Total Time of ode intergration
 k1 = 3;  k2 = 4;                                                           % Position Error gain for xr, er, respectively.
 a  = 0.2;  b = 2;                                                          % The coefficient (a) and exponential decay rate (b) of the sliding variable s
 
@@ -79,14 +106,16 @@ tVec = tmp;
 qMat = interp1( tvec, x( :, 1:N ), tmp ); 
 tmp = arrayfun( xd, tVec , 'UniformOutput', false); tmp = cell2mat( tmp' );
 
+
+%%
 % Defining Tracking marker "tracker" for visualization
 % Putting the time vector to desired x position for marker definition
 tracker = myMarker( tmp( :, 1), tmp( :, 2), zeros( 1, length( tVec ) ),    ... % Z Position is zero since 
-                    'name', "trackingMarker" , 'markersize', 4, 'markercolor', c.pink ); 
+                    'name', "trackingMarker" , 'markersize', 7, 'markercolor', c.pink ); 
 
 robot.addTrackingPoint( tracker )                
 clear tmp*
-robot.runAnimation( tVec, qMat', 0.5, true );
+robot.runAnimation( tVec, qMat', 0.33, false );
 
 
 %% (--) ODE Function Definition.                   
@@ -112,7 +141,7 @@ function dx = odefcn( t, x, k1, k2, a, b, xd, vd, FK_func, J_func  )
         
     else    % If redundent manipulator
         Jinv = J' * inv( J * J' );
-        dx(   1 :     n ) = Jinv * ( vd( t )  - k1 * ( pEE' - xd( t ) ) )' + a * exp( -b * t ) - ( eye(n,n) - Jinv * J ) * x( 1 : n );
+        dx(   1 :     n ) = Jinv * ( vd( t )  - k1 * ( pEE' - xd( t ) ) )' + a * exp( -b * t ) - 3 * ( eye(n,n) - Jinv * J ) * x( 1 : n );
         dx( n+1 : 2 * n ) =       dx( 1 : n ) + k2 * ( x( 1 : n ) - x( n+1: 2*n ) ) - a * exp( -b * t );        
     end
         

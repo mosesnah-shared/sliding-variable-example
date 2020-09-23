@@ -72,7 +72,9 @@ classdef myPlanarRobot < handle
             obj.hLimbs  = gobjects( 1, obj.N     );
             obj.hJoints = gobjects( 1, obj.N + 1 );
             
-            obj.cMat    = [obj.c.green; obj.c.blue; obj.c.yellow; obj.c.pink; obj.c.orange; obj.c.blue_sky; obj.c.purple ];
+            obj.cMat    = [obj.c.green;   obj.c.blue;   obj.c.yellow; ...
+                            obj.c.pink; obj.c.orange; obj.c.blue_sky; 
+                          obj.c.purple;   obj.c.grey; obj.c.orange_milky; obj.c.roseRed];
             
         end
         
@@ -112,6 +114,7 @@ classdef myPlanarRobot < handle
             for i = 1 : obj.N + 1
                 obj.hJoints( i ) = plot(  pMat( 1, i ), pMat( 2, i ), 'o', ...
                                           'MarkerEdgeColor', obj.cMat( i, : ), ...
+                                          'MarkerSize'     , 10, ...
                                           'MarkerFaceColor', [1,1,1] );  
             end
                     
