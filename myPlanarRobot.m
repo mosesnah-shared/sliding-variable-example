@@ -26,9 +26,13 @@ classdef myPlanarRobot < handle
          J_sym;  J_func;                                                   % End-effector Jacobian, symbolic and function.     
         FK_sym; FK_func;                                                   % End-effector Forward-Kinematics, symbolic and function.
         
-        hFig    = gobjects(0);                                             % Handle of figure.
-        hTitle  = gobjects(0);                                             % Handle of Title. 
+        hFig    = gobjects( 0 );                                           % Handle of figure.
+        hTitle  = gobjects( 0 );                                           % Handle of Title. 
         hAxes   = gobjects( 1, 3 );                                        % Handles of axes, The list of axes, 1,2,3 is ordered as main, side1, side2
+        
+        % 1, 2 and 3 correspond to main plot, subplot1 and subplot2, respectively.
+        hMarkers  = {     gobjects(0),     gobjects(0),       gobjects(0) };
+        markers   = {  myMarker.empty,  myMarker.empty,    myMarker.empty };      
         
         hLimbs; hJoints
 
@@ -113,6 +117,18 @@ classdef myPlanarRobot < handle
                     
         end
         
+        function addTrackingPoint( obj, marker )
+              m = plot( marker.xdata( 1 ), marker.ydata( 1 ), 'o', ...
+                                             'parent', obj.hAxes( 1 ), ...
+                                             'Marker', marker.markerStyle, ...
+                                         'MarkerSize', marker.markerSize,  ...
+                                    'MarkerEdgeColor', marker.markerColor, ...
+                                    'MarkerFaceColor',  [1,1,1]  ); 
+
+             obj.hMarkers{ 1 }( end + 1 ) = m;
+             obj.markers{ 1 }( end + 1 )  = marker; 
+        end
+        
         function runAnimation( obj, tVec, qVec, vidSpeed, isRecord )
             
             obj.hTitle  = title( obj.hAxes( 1 ), sprintf( '[Time] %5.3f (s)', tVec( 1 ) ) );
@@ -145,6 +161,23 @@ classdef myPlanarRobot < handle
                     set( obj.hLimbs(  j    ), 'xdata', [ pMat( 1,j ), pMat( 1,j+1 ) ], 'ydata', [ pMat( 2,j ), pMat( 2,j+1 ) ] );
                     set( obj.hJoints( j + 1), 'xdata', pMat( 1, j + 1 ), 'ydata', pMat( 2, j + 1 ) );
                 end
+                
+                % Update Tracking Point
+                for j = 1 : length( obj.hMarkers )
+
+                    if isempty( obj.hMarkers{ j } )
+                        continue     % Go to next iteration
+                    end
+
+                    for k = 1 : length( obj.hMarkers{ j } )
+
+                        set( obj.hMarkers{ j }( k ), 'XData', obj.markers{ j }( k ).xdata( i ), ...
+                                                     'YData', obj.markers{ j }( k ).ydata( i )  )
+
+                    end
+
+                end                
+                
                 
                 if isRecord                                                % If videoRecord is ON
                     frame = getframe( obj.hFig );                          % Get the current frame of the figure
